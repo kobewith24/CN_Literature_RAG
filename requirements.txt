@@ -1,0 +1,8 @@
+# 运行环境：Python 3.10（建议使用 conda 创建独立环境，详见 docs/环境配置命令-本机.txt）
+# 以下为 CPU 版本依赖；GPU 版本请将 paddlepaddle 替换为 paddlepaddle-gpu==2.6.2.post120，
+# 安装命令见 docs/环境配置命令-本机.txt（需根据本机 CUDA 版本选择对应源）。
+paddlepaddle==2.6.2
+paddlenlp==2.6.1
+hnswlib
+numpy
+ipykernel

@@ -4,3 +4,7 @@
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
+
+# 体积超过 GitHub 单文件限制（100MB）的数据文件，仅本地保留
+rank/rank_dataset/train_pairwise.csv
+recall/recall_result_file/

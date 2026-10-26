@@ -1,0 +1,2 @@
+# 让 GitHub 语言统计以 .py 文件为准（忽略体积占比高的 Jupyter notebook）
+*.ipynb linguist-detectable=false
