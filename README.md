@@ -33,11 +33,14 @@ Python · PaddlePaddle · PaddleNLP · hnswlib
 │   ├── model.py / data.py     #   排序模型定义与数据处理
 │   ├── model_param/           #   排序模型参数目录（权重文件见该目录 README）
 │   └── rank_dataset/          #   排序阶段数据集（训练集 train_pairwise.csv 过大未上传）
-└── search_system/             # 完整检索系统（召回 + 排序串联）
-    ├── search.py/.ipynb       #   端到端检索入口
-    ├── model.py / base_model.py / data.py / data2.py / ann_util.py
-    └── （运行所需模型权重、HNSW 索引文件与语料库 corpus.csv 较大，
-        权重与索引未上传至仓库，可分别使用 recall、rank 模块训练生成，或从本地备份拷贝）
+├── search_system/             # 完整检索系统（召回 + 排序串联）
+│   ├── search.py/.ipynb       #   端到端检索入口（命令行交互）
+│   ├── model.py / base_model.py / data.py / data2.py / ann_util.py
+│   └── （运行所需模型权重、HNSW 索引文件与语料库 corpus.csv 较大，
+│       权重与索引未上传至仓库，可分别使用 recall、rank 模块训练生成，或从本地备份拷贝）
+└── desktop_app/               # 桌面客户端（Tkinter 图形界面）
+    ├── engine.py              #   检索引擎：加载两阶段模型，提供 search() 接口
+    └── app.py                 #   窗口程序：输入查询 → 精排 Top50 / 召回 Top50 两个页签
 ```
 
 ## 运行步骤
@@ -71,6 +74,22 @@ conda install -c conda-forge hnswlib   # Windows 无 MSVC 编译环境时用这�
 准备好召回模型权重（`recall_model_state.pdparams`）、排序模型权重（`rank_model_state.pdparams`）与 HNSW 索引文件（`final_index.bin`）后，运行 `search.py` 进行端到端检索。
 
 > 说明：模型权重（*.pdparams）、索引文件（*.bin）、排序训练集（`rank/rank_dataset/train_pairwise.csv`）与召回结果文件（`recall/recall_result_file/`）单文件体积超过 GitHub 限制，未纳入版本管理；权重与索引请按上述步骤自行训练生成，或参见各 `model_param/README.md`。语料库 `corpus.csv` 已随仓库提供（`recall/recall_dataset/` 与 `search_system/` 各一份）。
+
+### 5. 桌面客户端（desktop_app/）
+
+图形界面版检索工具（Tkinter，无需额外安装依赖）：
+
+```bash
+cd desktop_app
+python app.py
+```
+
+启动后窗口内输入查询词，回车或点击「查询」，即可查看：
+
+- **精排结果 · Top50**：召回结果经 ERNIE-3.0 pairwise 模型重排后的最终排序（含排序分）；
+- **召回结果 · Top50**：按语义相似度（召回分）排序的候选文献。
+
+窗口底部状态栏显示检索耗时与条数；双击结果行可复制文献标题。模型只在启动时加载一次（约 20 秒），之后每次查询约 5~10 秒（CPU）。
 
 ## 效果指标
 
