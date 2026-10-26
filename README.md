@@ -50,7 +50,10 @@ Python · PaddlePaddle · PaddleNLP · hnswlib
 conda create --name search python=3.10
 conda activate search
 pip install -r requirements.txt    # CPU 版本；GPU 版本请按 docs/ 中的命令安装 paddlepaddle-gpu
+conda install -c conda-forge hnswlib   # Windows 无 MSVC 编译环境时用这条安装 hnswlib
 ```
+
+> 本机没有 CUDA/cuDNN 运行库时使用 CPU 版 paddlepaddle 即可：单条 query 的召回 + 排序推理在 CPU 上只需数秒（`recall.py` 本身即按 CPU 设计）。首次运行会自动从百度源下载 ERNIE-1.0 与 ERNIE-3.0-medium-zh 预训练权重（约 750MB，缓存于 `~/.paddlenlp`）。
 
 ### 2. 召回模块（recall/）
 
