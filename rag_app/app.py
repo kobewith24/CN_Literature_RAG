@@ -11,6 +11,7 @@ import json
 import queue
 import sys
 import threading
+import time
 import tkinter as tk
 from tkinter import ttk
 
@@ -219,9 +220,17 @@ class RagApp(object):
 
     # ------------------------------------------------------------ 后端检查
     def _check_backend(self):
+        """轮询等待检索服务就绪（索引首次加载约 40–60 秒）。"""
         def work():
-            ok, info = self.client.health()
-            self.queue.put(("health", ok, info))
+            deadline = time.time() + 180
+            while time.time() < deadline:
+                ok, info = self.client.health()
+                if ok:
+                    self.queue.put(("health", True, info))
+                    return
+                self.queue.put(("health_wait", None, None))
+                time.sleep(3)
+            self.queue.put(("health", False, {}))
         threading.Thread(target=work, daemon=True).start()
 
     # ---------------------------------------------------------------- 提问
@@ -266,7 +275,10 @@ class RagApp(object):
             while True:
                 msg = self.queue.get_nowait()
                 kind = msg[0]
-                if kind == "health":
+                if kind == "health_wait":
+                    self.pill.configure(text="● 启动中…", bg="#fef3c7", fg=WARN)
+                    self.footer.configure(text="正在等待检索服务就绪（首次加载索引约 1 分钟）…")
+                elif kind == "health":
                     _, ok, info = msg
                     self.ready = bool(ok)
                     if self.ready:
@@ -361,6 +373,9 @@ def main():
     app = RagApp(root)
     if "--selftest" in sys.argv:
         def auto():
+            if not app.ready:
+                root.after(1000, auto)
+                return
             app.entry.insert(0, "双目立体视觉的相机标定有哪些常用方法？")
             app.ask()
 
