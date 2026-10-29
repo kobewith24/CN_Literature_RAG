@@ -5,6 +5,7 @@
   D:\\Anaconda\\envs\\search\\python.exe eval_title_recall_legacy.py
 """
 import json
+import os
 import re
 import sys
 import time
@@ -14,7 +15,9 @@ import hnswlib
 import numpy as np
 import paddle
 
-SYS_DIR = r"D:\Projects\Search_Rank_System_1029\search_system"
+HERE = os.path.dirname(os.path.abspath(__file__))      # retrieval/
+PROJ = os.path.dirname(HERE)                            # 项目根目录
+SYS_DIR = os.path.join(PROJ, "search_system")
 sys.path.insert(0, SYS_DIR)
 
 from paddlenlp.data import Pad, Tuple
@@ -24,11 +27,11 @@ from paddlenlp.transformers import AutoModel, AutoTokenizer
 from base_model import SemanticIndexBase
 from data2 import convert_example
 
-DEV = r"D:\Projects\Search_Rank_System_1029\recall\recall_dataset\dev.csv"
-CORPUS = SYS_DIR + r"\corpus.csv"
-INDEX = SYS_DIR + r"\final_index.bin"
-WEIGHTS = SYS_DIR + r"\recall_model_state.pdparams"
-OUT = r"D:\Projects\Search_Rank_System_1029\retrieval\data\metrics_title_ernie_legacy.json"
+DEV = os.path.join(PROJ, "recall", "recall_dataset", "dev.csv")
+CORPUS = os.path.join(SYS_DIR, "corpus.csv")
+INDEX = os.path.join(SYS_DIR, "final_index.bin")
+WEIGHTS = os.path.join(SYS_DIR, "recall_model_state.pdparams")
+OUT = os.path.join(HERE, "data", "metrics_title_ernie_legacy.json")
 
 paddle.set_device("gpu")
 

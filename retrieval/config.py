@@ -3,7 +3,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent          # retrieval/
-PROJ = ROOT.parent                              # Search_Rank_System_1029/
+PROJ = ROOT.parent                              # CN_Literature_RAG/
 SYS = PROJ / "search_system"                    # 原检索系统（基线数据与权重）
 DATA = ROOT / "data"                            # 新索引与处理中间产物
 

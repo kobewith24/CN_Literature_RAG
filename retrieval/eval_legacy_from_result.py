@@ -5,12 +5,15 @@
 """
 import io
 import json
+import os
 import re
 
-BASE = r"D:\Projects\Search_Rank_System"
-DEV = BASE + r"\recall\recall_dataset\dev.csv"
-RESULT = BASE + r"\recall\recall_result_file\recall_result.txt"
-OUT = r"D:\Projects\Search_Rank_System_1029\retrieval\data\metrics_title_ernie_legacy.json"
+HERE = os.path.dirname(os.path.abspath(__file__))      # retrieval/
+PROJ = os.path.dirname(HERE)                            # 项目根目录
+BASE = r"D:\Projects\Search_Rank_System"                # 原项目（只读，基线数据）
+DEV = os.path.join(BASE, "recall", "recall_dataset", "dev.csv")
+RESULT = os.path.join(BASE, "recall", "recall_result_file", "recall_result.txt")
+OUT = os.path.join(HERE, "data", "metrics_title_ernie_legacy.json")
 
 
 def norm(s):
