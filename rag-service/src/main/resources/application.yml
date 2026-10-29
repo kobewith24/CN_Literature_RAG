@@ -1,0 +1,18 @@
+server:
+  port: 8080
+  tomcat:
+    connection-timeout: 5m
+
+spring:
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+
+retrieval:
+  base-url: http://127.0.0.1:8000
+
+ollama:
+  base-url: http://127.0.0.1:11434
+  model: qwen3:4b-instruct-2507-q4_K_M

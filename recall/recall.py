@@ -21,7 +21,7 @@ from data2 import gen_id2corpus
 from ann_util import build_index
 
 # %%
-paddle.set_device("cpu") 
+paddle.set_device("gpu")
 
 # %%
 # 下面开始构建模型并载入模型参数

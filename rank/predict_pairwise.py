@@ -15,7 +15,7 @@ from paddlenlp.datasets import load_dataset
 from paddlenlp.transformers import AutoModel, AutoTokenizer
 
 # %%
-paddle.set_device("cpu")
+paddle.set_device("gpu")
 
 # %%
 @paddle.no_grad()

@@ -26,6 +26,8 @@ import copy
 # %%
 # 下面是准备工作
 
+paddle.set_device("gpu")
+
 # %%
 def batchify_fn(samples):
     fn = Tuple(

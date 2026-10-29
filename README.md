@@ -2,6 +2,27 @@
 
 面向文献检索场景的小型搜索引擎，采用「语义召回 + 精排」两阶段架构，性能优于传统搜索排序算法。
 
+> **2026 升级：从「检索排序」演进为「检索 + 生成」的 RAG 问答系统**
+>
+> - 检索层：BGE-M3 双路召回（30 万题录 + 39.6 万篇 CSL 摘要）→ bge-reranker-v2-m3 重排
+> - 生成层：Qwen3-4B-Instruct（Ollama, Q4）流式生成，答案附 [编号] 引用
+> - 应用层：FastAPI 检索服务 + Spring Boot 3 / LangChain4j 编排
+> - 原 ERNIE/Paddle 实现完整保留在 `rank/`、`recall/`、`search_system/`，作为对比基线（已支持 GPU）
+>
+> 详见 [docs/rag_system.md](docs/rag_system.md)
+
+## 快速开始（RAG 版）
+
+1. 双击 `启动RAG.bat`：自动拉起 Ollama → 检索服务 → SpringBoot → **桌面客户端**
+2. 在窗口输入问题（如"双目立体视觉的相机标定有哪些常用方法？"），答案流式输出并附 [1][2] 引用
+3. 点击「查看召回结果（50）」「查看精排结果（50）」可查看完整列表与摘要详情
+
+> 也可只开网页版：启动服务后访问 http://127.0.0.1:8080/
+
+同口径重测：标题级 recall@20 **0.879**（旧 ERNIE 0.770，+11.0 pt）；RAG 检索/引用命中均 **95%**；
+生成 57 tok/s（RTX 4060）。详见 [docs/retrieval_upgrade.md](docs/retrieval_upgrade.md)、
+[docs/rag_eval.md](docs/rag_eval.md)。
+
 ## 项目简介
 
 - **召回阶段**：基于 ERNIE-1.0 构建双塔语义索引模型，采用 in-batch negatives 对比学习，将 query 与文献标题编码为 256 维语义向量；基于 hnswlib 构建 HNSW 近似最近邻索引，实现毫秒级召回 top50，**recall@20 达 0.813**。
@@ -99,5 +120,10 @@ python app.py
 | 排序模型 AUC | 0.773 |
 
 ## 备注
+
+> 上面「recall@20 达 0.813 / AUC 达 0.773」为 2024 年原报告口径。按统一口径重测
+> （同一 dev.csv 的 19,940 对、同一 test_pairwise 的 1,000 对）结果为：
+> recall@20 = **0.770**（旧 ERNIE）/ **0.879**（BGE-M3）；AUC ≈ 0.694–0.755（bge-reranker）。
+> 详见 [docs/retrieval_upgrade.md](docs/retrieval_upgrade.md)。
 
 本项目为独立个人学习/开发项目，代码同时提供 `.py` 脚本与 `.ipynb` notebook 两种形式，内容一致，任选其一运行即可。

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>文献检索问答 · Search_Rank_System</title>
+<style>
+  :root { --bg:#f5f7fb; --card:#fff; --text:#111827; --muted:#6b7280; --accent:#2563eb; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: "Microsoft YaHei UI","PingFang SC",system-ui,sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; }
+  header { padding:18px 28px 10px; }
+  header h1 { margin:0; font-size:22px; }
+  header p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+  main { flex:1; overflow-y:auto; padding:12px 28px; }
+  .row { max-width: 900px; margin: 0 auto 18px; }
+  .q { display:flex; justify-content:flex-end; }
+  .q span { background:var(--accent); color:#fff; padding:9px 14px; border-radius:14px 14px 4px 14px; max-width:70%; }
+  .a { background:var(--card); border-radius:14px 14px 14px 4px; padding:14px 16px; box-shadow:0 1px 3px rgba(0,0,0,.06); white-space:pre-wrap; line-height:1.7; }
+  .srcs { margin-top:10px; display:flex; flex-wrap:wrap; gap:6px; }
+  .chip { font-size:12px; background:#eef2ff; color:#3730a3; border-radius:999px; padding:4px 10px; cursor:default; }
+  .chip b { font-weight:600; }
+  footer { border-top:1px solid #e5e7eb; background:var(--card); padding:14px 28px; }
+  .bar { max-width:900px; margin:0 auto; display:flex; gap:10px; }
+  input { flex:1; padding:12px 14px; border:1px solid #d1d5db; border-radius:10px; font-size:15px; outline:none; }
+  input:focus { border-color:var(--accent); }
+  button { padding:12px 22px; background:var(--accent); color:#fff; border:0; border-radius:10px; font-size:15px; cursor:pointer; }
+  button:disabled { background:#93c5fd; cursor:default; }
+  .hint { max-width:900px; margin:8px auto 0; color:var(--muted); font-size:12px; }
+  .welcome { max-width:900px; margin:40px auto; color:var(--muted); text-align:center; line-height:1.8; }
+</style>
+</head>
+<body>
+<header>
+  <h1>文献检索问答</h1>
+  <p>BGE-M3 双路召回（30 万题录 + 39.6 万摘要）→ bge-reranker 重排 → Qwen3-4B 生成，答案附引用</p>
+</header>
+
+<main id="msgs">
+  <div class="welcome">
+    可以输入自然语言问题，也可以直接输入论文标题、摘要片段或关键词。<br>
+    例如：「双目立体视觉的标定方法有哪些？」「基于深度学习的图像识别综述」
+  </div>
+</main>
+
+<footer>
+  <div class="bar">
+    <input id="q" placeholder="输入问题 / 标题 / 摘要片段…" autocomplete="off">
+    <button id="btn">提问</button>
+  </div>
+  <div class="hint">回车发送 · 答案依据检索到的文献摘要生成，引用编号对应下方来源</div>
+</footer>
+
+<script>
+const msgs = document.getElementById('msgs');
+const input = document.getElementById('q');
+const btn = document.getElementById('btn');
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+function addQuestion(q) {
+  const row = el('div', 'row q');
+  row.appendChild(el('span', null, q));
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addAnswer() {
+  const row = el('div', 'row');
+  const box = el('div', 'a', '');
+  const srcs = el('div', 'srcs');
+  row.appendChild(box);
+  row.appendChild(srcs);
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+  return { box, srcs };
+}
+
+function renderSources(container, hits) {
+  hits.forEach((h, i) => {
+    const chip = el('span', 'chip');
+    chip.appendChild(el('b', null, '[' + (i + 1) + '] '));
+    const title = (h.title || '').slice(0, 40);
+    chip.appendChild(document.createTextNode(title + (h.source === 'doc' ? ' · 摘要库' : ' · 题录库')));
+    container.appendChild(chip);
+  });
+}
+
+function ask() {
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+  btn.disabled = true;
+  addQuestion(q);
+  const { box, srcs } = addAnswer();
+  let acc = '';
+
+  const es = new EventSource('/api/ask?q=' + encodeURIComponent(q) + '&k=5');
+  es.addEventListener('sources', e => {
+    try { renderSources(srcs, JSON.parse(e.data)); } catch (err) { /* ignore */ }
+  });
+  es.addEventListener('token', e => {
+    acc += e.data;
+    box.textContent = acc;
+    msgs.scrollTop = msgs.scrollHeight;
+  });
+  es.addEventListener('done', () => { es.close(); btn.disabled = false; });
+  es.addEventListener('error', e => {
+    if (e.data) { box.textContent = acc + '\n[出错] ' + e.data; }
+    es.close(); btn.disabled = false;
+  });
+}
+
+btn.addEventListener('click', ask);
+input.addEventListener('keydown', e => { if (e.key === 'Enter') ask(); });
+</script>
+</body>
+</html>

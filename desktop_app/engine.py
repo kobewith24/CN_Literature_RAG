@@ -26,7 +26,7 @@ from data import convert_pairwise_example  # noqa: E402
 from data2 import convert_example, gen_id2corpus  # noqa: E402
 from model import PairwiseMatching  # noqa: E402
 
-paddle.set_device("cpu")
+paddle.set_device("gpu")
 
 OUTPUT_EMB_SIZE = 256
 RECALL_MAX_LEN = 60

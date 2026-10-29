@@ -27,7 +27,7 @@ from visualdl import LogWriter
 from data import convert_pairwise_example
 
 # %%
-paddle.set_device("cpu")
+paddle.set_device("gpu")
 
 # %%
 def read_text_pair(data_path): 
