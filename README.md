@@ -4,7 +4,7 @@
 
 由 2023–2024 年的「搜索排序系统」演进而来——检索链路升级为 BGE-M3 双索引，并在其上增加生成层与服务化。
 
-![系统架构](docs/architecture.png)
+![运作流程](docs/architecture.png)
 
 ## 核心特性
 

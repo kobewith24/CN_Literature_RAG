@@ -1,86 +1,61 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="880" viewBox="0 0 1240 880" font-family="Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1520" height="470" viewBox="0 0 1520 470" font-family="Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif">
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/>
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
     </marker>
-    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.08"/>
+    <filter id="shadow" x="-6%" y="-6%" width="112%" height="112%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.07"/>
     </filter>
   </defs>
 
-  <rect width="1240" height="880" fill="#f8fafc"/>
+  <rect width="1520" height="470" fill="#ffffff"/>
 
-  <text x="48" y="52" font-size="24" font-weight="700" fill="#0f172a">CN_Literature_RAG · 文献检索问答系统架构</text>
-  <text x="48" y="80" font-size="13" fill="#64748b">双路语义召回（题录 30 万 + 摘要 39.6 万）→ 统一重排 → 本地大模型流式生成（答案带引用）</text>
+  <text x="40" y="52" font-size="22" font-weight="700" fill="#0f172a">文献检索问答 · 运作流程</text>
+  <text x="40" y="80" font-size="13" fill="#64748b">问题 → 双路召回 → 统一重排 → 生成 → 带引用的答案</text>
 
-  <!-- 应用层 -->
-  <rect x="40" y="104" width="250" height="92" rx="12" fill="#eef2ff" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="60" y="136" font-size="15" font-weight="700" fill="#312e81">桌面客户端（Tkinter）</text>
-  <text x="60" y="158" font-size="12" fill="#4338ca">流式答案 · 前 5 条引用</text>
-  <text x="60" y="177" font-size="12" fill="#4338ca">召回 / 精排 Top50 列表</text>
+  <!-- 问题 -->
+  <rect x="40" y="230" width="150" height="100" rx="12" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="115" y="272" font-size="15" font-weight="700" fill="#0f172a" text-anchor="middle">用户问题</text>
+  <text x="115" y="296" font-size="11" fill="#64748b" text-anchor="middle">自然语言 / 标题</text>
 
-  <rect x="320" y="104" width="230" height="92" rx="12" fill="#eef2ff" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="340" y="136" font-size="15" font-weight="700" fill="#312e81">浏览器页面（可选）</text>
-  <text x="340" y="158" font-size="12" fill="#4338ca">http://127.0.0.1:8080</text>
-  <text x="340" y="177" font-size="12" fill="#4338ca">同 SSE 流式问答</text>
+  <line x1="190" y1="280" x2="246" y2="280" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
 
-  <!-- 应用服务层 -->
-  <rect x="100" y="316" width="480" height="128" rx="12" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="122" y="346" font-size="16" font-weight="700" fill="#065f46">Spring Boot 3.5 + LangChain4j</text>
-  <text x="122" y="368" font-size="12" fill="#047857">:8080 · /api/ask（SSE 流式）· /api/search</text>
-  <text x="122" y="392" font-size="12" fill="#047857">检索编排 → Prompt 组装（资料编号）→ 流式生成</text>
-  <text x="122" y="416" font-size="12" fill="#047857">引用来源随首帧推送，答案逐 token 返回</text>
+  <!-- 召回 -->
+  <rect x="250" y="150" width="420" height="260" rx="14" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="272" y="184" font-size="15" font-weight="700" fill="#334155">① 双路语义召回</text>
 
-  <!-- 检索层 -->
-  <rect x="100" y="556" width="480" height="128" rx="12" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="122" y="586" font-size="16" font-weight="700" fill="#1e3a8a">FastAPI 检索服务</text>
-  <text x="122" y="608" font-size="12" fill="#1d4ed8">:8000 · GET /retrieve?q=&amp;k=&amp;mode=hybrid</text>
-  <text x="122" y="632" font-size="12" fill="#1d4ed8">BGE-M3 编码（fp16）→ 双路召回 50+50</text>
-  <text x="122" y="656" font-size="12" fill="#1d4ed8">→ bge-reranker-v2-m3 统一重排 → Top-K</text>
+  <rect x="270" y="200" width="380" height="76" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text x="290" y="228" font-size="13" font-weight="700" fill="#0f172a">题录索引 · 30 万条</text>
+  <text x="290" y="250" font-size="11" fill="#64748b">标题 + 关键词 → 编码检索，取 Top50</text>
 
-  <!-- 索引 -->
-  <rect x="60" y="744" width="230" height="78" rx="10" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5"/>
-  <text x="78" y="772" font-size="14" font-weight="700" fill="#0f172a">题录索引</text>
-  <text x="78" y="792" font-size="12" fill="#475569">30 万条 · hnswlib · 1024d</text>
-  <text x="78" y="810" font-size="12" fill="#475569">标题 + 关键词 · 1.25 GB</text>
+  <rect x="270" y="296" width="380" height="76" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text x="290" y="324" font-size="13" font-weight="700" fill="#0f172a">摘要索引 · 39.6 万篇</text>
+  <text x="290" y="346" font-size="11" fill="#64748b">标题 + 摘要 + 关键词 → 编码检索，取 Top50</text>
 
-  <rect x="320" y="744" width="260" height="78" rx="10" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5"/>
-  <text x="338" y="772" font-size="14" font-weight="700" fill="#0f172a">摘要索引</text>
-  <text x="338" y="792" font-size="12" fill="#475569">395,927 篇 · hnswlib · 1024d</text>
-  <text x="338" y="810" font-size="12" fill="#475569">CSL 标题 + 摘要 + 关键词 · 1.65 GB</text>
+  <line x1="670" y1="280" x2="716" y2="280" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="693" y="266" font-size="11" fill="#475569" text-anchor="middle">100 候选</text>
 
-  <!-- 生成层 -->
-  <rect x="780" y="316" width="360" height="128" rx="12" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow)"/>
-  <text x="802" y="346" font-size="16" font-weight="700" fill="#7f1d1d">Ollama · Qwen3-4B-Instruct-2507</text>
-  <text x="802" y="368" font-size="12" fill="#b91c1c">:11434 · Q4_K_M（约 2.3 GB）</text>
-  <text x="802" y="392" font-size="12" fill="#b91c1c">GPU 推理 · 57 tok/s</text>
-  <text x="802" y="416" font-size="12" fill="#b91c1c">流式 token 输出（SSE 转发）</text>
+  <!-- 重排 -->
+  <rect x="720" y="230" width="230" height="100" rx="12" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="835" y="266" font-size="15" font-weight="700" fill="#0f172a" text-anchor="middle">② 统一重排</text>
+  <text x="835" y="290" font-size="11" fill="#64748b" text-anchor="middle">跨编码器逐条打分</text>
+  <text x="835" y="308" font-size="11" fill="#64748b" text-anchor="middle">合并排序后取 Top5</text>
 
-  <!-- 连线 -->
-  <line x1="165" y1="196" x2="165" y2="316" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
-  <text x="175" y="258" font-size="12" fill="#334155">问题 / SSE</text>
+  <line x1="950" y1="280" x2="996" y2="280" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="973" y="266" font-size="11" fill="#475569" text-anchor="middle">5 条资料</text>
 
-  <line x1="435" y1="196" x2="435" y2="316" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
-  <text x="445" y="262" font-size="12" fill="#334155">HTTP</text>
+  <!-- 生成 -->
+  <rect x="1000" y="230" width="260" height="100" rx="12" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="1130" y="266" font-size="15" font-weight="700" fill="#0f172a" text-anchor="middle">③ 生成答案</text>
+  <text x="1130" y="290" font-size="11" fill="#64748b" text-anchor="middle">资料编号后注入 Prompt</text>
+  <text x="1130" y="308" font-size="11" fill="#64748b" text-anchor="middle">大模型流式作答</text>
 
-  <line x1="300" y1="444" x2="300" y2="556" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
-  <text x="310" y="506" font-size="12" fill="#334155">/retrieve（hybrid，k=50）</text>
+  <line x1="1260" y1="280" x2="1306" y2="280" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="1283" y="266" font-size="11" fill="#475569" text-anchor="middle">逐字返回</text>
 
-  <line x1="580" y1="600" x2="580" y2="444" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
-  <text x="590" y="528" font-size="12" fill="#334155">passages + 引用元数据</text>
-
-  <line x1="580" y1="352" x2="780" y2="352" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
-  <text x="616" y="342" font-size="12" fill="#334155">Prompt（带编号资料）</text>
-
-  <line x1="780" y1="404" x2="580" y2="404" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
-  <text x="616" y="426" font-size="12" fill="#334155">token 流</text>
-
-  <line x1="190" y1="684" x2="190" y2="744" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
-  <line x1="440" y1="684" x2="440" y2="744" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
-  <text x="196" y="722" font-size="12" fill="#334155">kNN</text>
-  <text x="446" y="722" font-size="12" fill="#334155">kNN</text>
-
-  <!-- 底部说明 -->
-  <rect x="48" y="838" width="1144" height="26" rx="6" fill="#e2e8f0"/>
-  <text x="60" y="856" font-size="12" fill="#334155">全部推理在 GPU（cuda:0）执行：编码、重排、生成；CPU 仅用于索引构建与文本处理（限 4 线程）。启动时校验设备，CUDA 不可用则直接报错。</text>
+  <!-- 答案 -->
+  <rect x="1310" y="230" width="170" height="100" rx="12" fill="#f0f9ff" stroke="#7dd3fc" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="1395" y="266" font-size="15" font-weight="700" fill="#0c4a6e" text-anchor="middle">答案 + 引用</text>
+  <text x="1395" y="290" font-size="11" fill="#0369a1" text-anchor="middle">结论中标注 [1]–[5]</text>
+  <text x="1395" y="308" font-size="11" fill="#0369a1" text-anchor="middle">对应具体文献</text>
 </svg>
