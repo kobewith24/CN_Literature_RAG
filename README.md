@@ -1,129 +1,114 @@
-# 基于预训练语言模型的搜索排序系统（Search_Rank_System）
+# 文献检索问答系统（CN_Literature_RAG）
 
-面向文献检索场景的小型搜索引擎，采用「语义召回 + 精排」两阶段架构，性能优于传统搜索排序算法。
+面向中文文献的 **检索增强生成（RAG）** 问答系统：语义召回 + 重排 + 本地大模型生成，答案附可溯源的引用。
 
-> **2026 升级：从「检索排序」演进为「检索 + 生成」的 RAG 问答系统**
->
-> - 检索层：BGE-M3 双路召回（30 万题录 + 39.6 万篇 CSL 摘要）→ bge-reranker-v2-m3 重排
-> - 生成层：Qwen3-4B-Instruct（Ollama, Q4）流式生成，答案附 [编号] 引用
-> - 应用层：FastAPI 检索服务 + Spring Boot 3 / LangChain4j 编排
-> - 原 ERNIE/Paddle 实现完整保留在 `rank/`、`recall/`、`search_system/`，作为对比基线（已支持 GPU）
->
-> 详见 [docs/rag_system.md](docs/rag_system.md)
+由 2023–2024 年的「搜索排序系统」演进而来——检索链路升级为 BGE-M3 双索引，并在其上增加生成层与服务化。
 
-## 快速开始（RAG 版）
+![系统架构](docs/architecture.png)
 
-1. 双击 `启动RAG.bat`：自动拉起 Ollama → 检索服务 → SpringBoot → **桌面客户端**
-2. 在窗口输入问题（如"双目立体视觉的相机标定有哪些常用方法？"），答案流式输出并附 [1][2] 引用
-3. 点击「查看召回结果（50）」「查看精排结果（50）」可查看完整列表与摘要详情
+## 核心特性
 
-> 也可只开网页版：启动服务后访问 http://127.0.0.1:8080/
+- **双路召回**：30 万条题录（标题+关键词）+ 39.6 万篇 CSL 中文论文摘要，两套 HNSW 索引并行召回
+- **统一重排**：bge-reranker-v2-m3 跨编码器对混合候选统一打分，跨粒度可比
+- **流式生成**：Qwen3-4B-Instruct（Ollama，Q4）流式输出，答案按 [1][2] 标注引用
+- **服务化**：FastAPI 检索微服务 + Spring Boot 3.5 / LangChain4j 编排（SSE 推送）
+- **桌面客户端**：Tkinter 窗口，流式答案 + 前 5 条引用 + 完整召回/精排列表
+- **全 GPU 推理**：编码、重排、生成均在 cuda:0 上运行，CUDA 不可用时直接报错而非静默回退 CPU
 
-同口径重测：标题级 recall@20 **0.879**（旧 ERNIE 0.770，+11.0 pt）；RAG 检索/引用命中均 **95%**；
-生成 57 tok/s（RTX 4060）。详见 [docs/retrieval_upgrade.md](docs/retrieval_upgrade.md)、
-[docs/rag_eval.md](docs/rag_eval.md)。
+## 效果指标
 
-## 项目简介
+| 指标 | 数值 | 说明 |
+|---|---|---|
+| 标题级 recall@20 | **0.879** | 旧 ERNIE-1.0 基线 0.770（+11.0 pt，同 dev.csv 19,940 对） |
+| 重排 AUC | 0.694 / 0.755 | 中位数 / 阈值 0.7 二值化（1,000 对，gold 为距离） |
+| RAG 检索命中 @5 | **95%** | 60 题合成评测集 |
+| RAG 引用命中 @5 | **95%** | 完整问答链路，引用含 gold 摘要 |
+| 检索耗时 | **0.76 s** | 双路 100 候选 + 重排（GPU，fp16） |
+| 生成速度 | **57 tok/s** | RTX 4060 Laptop 8GB，Q4_K_M |
 
-- **召回阶段**：基于 ERNIE-1.0 构建双塔语义索引模型，采用 in-batch negatives 对比学习，将 query 与文献标题编码为 256 维语义向量；基于 hnswlib 构建 HNSW 近似最近邻索引，实现毫秒级召回 top50，**recall@20 达 0.813**。
-- **排序阶段**：基于 ERNIE-3.0-medium 以 margin ranking loss 训练 pairwise 排序模型，对召回结果进行精细排序，**排序模型 AUC 达 0.773**。
-- **检索系统**：串联召回与排序模块，实现完整的「query → 语义召回 → 精排 → 返回结果」检索流程。
+详见 [docs/retrieval_upgrade.md](docs/retrieval_upgrade.md) 与 [docs/rag_eval.md](docs/rag_eval.md)。
 
-## 技术栈
+## 快速开始
 
-Python · PaddlePaddle · PaddleNLP · hnswlib
+**前置**：Python 3.11（conda 环境 `rag`）、PyTorch 2.5.1+cu121、Java 21、Maven 3.9、[Ollama](https://ollama.com) 及 `qwen3:4b-instruct-2507-q4_K_M`。
+
+```bash
+# 1) 生成模型
+ollama serve
+ollama pull qwen3:4b-instruct-2507-q4_K_M
+
+# 2) 检索服务（首次加载索引约 40–60 秒）
+conda activate rag
+cd retrieval
+python -m uvicorn service:app --host 127.0.0.1 --port 8000
+
+# 3) 应用服务（另开终端）
+cd rag-service
+mvn -s maven-settings.xml package -DskipTests   # 国内需走镜像
+java -jar target/rag-service-1.0.0.jar
+
+# 4) 桌面客户端（另开终端）
+cd rag_app
+python app.py
+```
+
+Windows 下可用本地一键脚本 `启动RAG.bat`（自动拉起上述三个服务 + 客户端；脚本含本机路径，未纳入版本库）。
+
+网页版入口：启动服务后访问 <http://127.0.0.1:8080/>。
 
 ## 目录结构
 
 ```
-├── docs/                      # 环境配置命令（本机 / GPU 服务器）
-├── requirements.txt           # Python 依赖清单
-├── recall/                    # 召回模块
-│   ├── finetune.py/.ipynb     #   ERNIE-1.0 双塔模型微调（in-batch negatives 对比学习）
-│   ├── recall.py/.ipynb       #   对测试集 query 进行语义召回
-│   ├── evaluate.py/.ipynb     #   计算 recall@N（N=1/5/10/20/50）
-│   ├── ann_util.py            #   HNSW 索引构建工具
-│   ├── base_model.py          #   双塔语义索引基础模型
-│   ├── data.py / data2.py     #   数据集读取与样例转换
-│   ├── model_param/           #   召回模型参数目录（权重文件见该目录 README）
-│   ├── recall_dataset/        #   召回阶段数据集（含语料库 corpus.csv）
-│   └── recall_result_file/    #   召回结果与评估结果（本地生成，未上传）
-├── rank/                      # 排序模块
-│   ├── train_pairwise.py/.ipynb   # 训练 pairwise 排序模型（margin ranking loss）并评估
-│   ├── predict_pairwise.py/.ipynb # 利用训练好的模型对测试集进行排序
-│   ├── model.py / data.py     #   排序模型定义与数据处理
-│   ├── model_param/           #   排序模型参数目录（权重文件见该目录 README）
-│   └── rank_dataset/          #   排序阶段数据集（训练集 train_pairwise.csv 过大未上传）
-├── search_system/             # 完整检索系统（召回 + 排序串联）
-│   ├── search.py/.ipynb       #   端到端检索入口（命令行交互）
-│   ├── model.py / base_model.py / data.py / data2.py / ann_util.py
-│   └── （运行所需模型权重、HNSW 索引文件与语料库 corpus.csv 较大，
-│       权重与索引未上传至仓库，可分别使用 recall、rank 模块训练生成，或从本地备份拷贝）
-└── desktop_app/               # 桌面客户端（Tkinter 图形界面）
-    ├── engine.py              #   检索引擎：加载两阶段模型，提供 search() 接口
-    └── app.py                 #   窗口程序：输入查询 → 精排 Top50 / 召回 Top50 两个页签
+├── rag_app/                 # 桌面客户端（Tkinter）
+│   ├── app.py               #   主窗口：流式答案、引用 chips、召回/精排结果窗口
+│   └── rag_client.py        #   HTTP 客户端（/retrieve + SSE 解析）
+├── rag-service/             # 应用层：Spring Boot 3.5 + LangChain4j
+│   └── src/main/java/com/searchrank/rag/
+│       ├── client/          #   调用 Python 检索服务
+│       ├── service/         #   Prompt 组装 + 流式生成
+│       └── web/             #   /api/ask（SSE）、/api/search
+├── retrieval/               # 检索层（Python）
+│   ├── service.py           #   FastAPI：双路召回 + 重排
+│   ├── build_title_index.py #   30 万题录索引构建
+│   ├── build_doc_index.py   #   39.6 万 CSL 摘要索引构建
+│   ├── eval_*.py            #   召回/AUC/端到端评测
+│   └── data/                #   索引与语料（本地生成，未上传）
+├── docs/                    # 架构说明、升级与评测报告
+├── rank/ recall/ search_system/ desktop_app/   # 2023 旧实现（Paddle/ERNIE，保留作基线）
+└── requirements.txt
 ```
 
-## 运行步骤
+## 数据与模型
 
-### 1. 环境配置
+| 资源 | 规模 | 说明 |
+|---|---|---|
+| 题录语料 | 300,000 条 | PaddleNLP `literature_search_data`（标题+关键词） |
+| 摘要语料 | 395,927 篇 | [CSL 中文科学文献](https://huggingface.co/datasets/neuclir/csl)（标题+摘要+关键词） |
+| 向量模型 | BGE-M3 | 1024 维 dense，L2 归一化 |
+| 重排模型 | bge-reranker-v2-m3 | cross-encoder |
+| 生成模型 | Qwen3-4B-Instruct-2507 | Ollama，Q4_K_M，约 2.3GB |
 
-建议使用 conda 创建独立环境（Python 3.10），完整命令见 `docs/环境配置命令-本机.txt`（GPU 服务器见 `docs/环境配置命令-服务器.txt`）：
+> 实测两套语料标题重叠率约 **0.6%**：来源不同、互为补充——题录库用于"找文献"，摘要库用于"读内容答问题"。
+> 语音索引与模型权重体积较大未入库，用 `retrieval/build_*.py` 重建（BGE-M3 / reranker 从 HuggingFace 下载）。
 
-```bash
-conda create --name search python=3.10
-conda activate search
-pip install -r requirements.txt    # CPU 版本；GPU 版本请按 docs/ 中的命令安装 paddlepaddle-gpu
-conda install -c conda-forge hnswlib   # Windows 无 MSVC 编译环境时用这条安装 hnswlib
-```
+## 演进说明
 
-> 本机没有 CUDA/cuDNN 运行库时使用 CPU 版 paddlepaddle 即可：单条 query 的召回 + 排序推理在 CPU 上只需数秒（`recall.py` 本身即按 CPU 设计）。首次运行会自动从百度源下载 ERNIE-1.0 与 ERNIE-3.0-medium-zh 预训练权重（约 750MB，缓存于 `~/.paddlenlp`）。
+| 阶段 | 时间 | 技术栈 | 产出 |
+|---|---|---|---|
+| 检索排序系统 | 2023.09–2024.11 | PaddlePaddle · ERNIE-1.0 双塔 · ERNIE-3.0 pairwise · hnswlib | recall@20 0.770，AUC 0.694–0.755 |
+| RAG 升级 | 2025–2026 | BGE-M3 · bge-reranker · Qwen3-4B · FastAPI · Spring Boot/LangChain4j | recall@20 0.879，RAG 命中 95% |
 
-### 2. 召回模块（recall/）
+旧实现完整保留在 `rank/`、`recall/`、`search_system/`、`desktop_app/`，已切换为 GPU 运行，可直接复现基线。
 
-1. `finetune.py`：利用 literature_search_data 数据集对 ERNIE-1.0 双塔模型进行微调；
-2. `recall.py`：对测试集 query 进行语义召回（构建/加载 HNSW 索引，召回 top50）；
-3. `evaluate.py`：对召回结果计算 recall@N，生成 result.tsv（记录 recall@1/5/10/20/50）。
+## 环境说明
 
-### 3. 排序模块（rank/）
+- 检索服务强制 GPU：启动时校验 `encoder.device` / `reranker.device`，非 `cuda` 直接报错
+- CPU 仅用于索引构建（hnswlib 无 CUDA 实现）与文本处理，默认限制 4 线程（`RAG_THREADS` 可调）
+- 服务进程以低于正常优先级运行，避免占满 CPU
+- 显存优化：模型 fp16 + `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`（8GB 卡可同时驻留编码、重排与生成模型）
 
-1. `train_pairwise.py`：训练 pairwise 排序模型，并在最后进行评估；
-2. `predict_pairwise.py`：利用训练好的模型对测试集进行排序。
+## 文档
 
-### 4. 完整检索系统（search_system/）
-
-准备好召回模型权重（`recall_model_state.pdparams`）、排序模型权重（`rank_model_state.pdparams`）与 HNSW 索引文件（`final_index.bin`）后，运行 `search.py` 进行端到端检索。
-
-> 说明：模型权重（*.pdparams）、索引文件（*.bin）、排序训练集（`rank/rank_dataset/train_pairwise.csv`）与召回结果文件（`recall/recall_result_file/`）单文件体积超过 GitHub 限制，未纳入版本管理；权重与索引请按上述步骤自行训练生成，或参见各 `model_param/README.md`。语料库 `corpus.csv` 已随仓库提供（`recall/recall_dataset/` 与 `search_system/` 各一份）。
-
-### 5. 桌面客户端（desktop_app/）
-
-图形界面版检索工具（Tkinter，无需额外安装依赖）：
-
-```bash
-cd desktop_app
-python app.py
-```
-
-启动后窗口内输入查询词，回车或点击「查询」，即可查看：
-
-- **精排结果 · Top50**：召回结果经 ERNIE-3.0 pairwise 模型重排后的最终排序（含排序分）；
-- **召回结果 · Top50**：按语义相似度（召回分）排序的候选文献。
-
-窗口底部状态栏显示检索耗时与条数；双击结果行可复制文献标题。模型只在启动时加载一次（约 20 秒），之后每次查询约 5~10 秒（CPU）。
-
-## 效果指标
-
-| 指标 | 数值 |
-|------|------|
-| 召回 recall@20 | 0.813 |
-| 排序模型 AUC | 0.773 |
-
-## 备注
-
-> 上面「recall@20 达 0.813 / AUC 达 0.773」为 2024 年原报告口径。按统一口径重测
-> （同一 dev.csv 的 19,940 对、同一 test_pairwise 的 1,000 对）结果为：
-> recall@20 = **0.770**（旧 ERNIE）/ **0.879**（BGE-M3）；AUC ≈ 0.694–0.755（bge-reranker）。
-> 详见 [docs/retrieval_upgrade.md](docs/retrieval_upgrade.md)。
-
-本项目为独立个人学习/开发项目，代码同时提供 `.py` 脚本与 `.ipynb` notebook 两种形式，内容一致，任选其一运行即可。
+- [docs/rag_system.md](docs/rag_system.md) — 架构、接口、数据与启动细节
+- [docs/retrieval_upgrade.md](docs/retrieval_upgrade.md) — ERNIE → BGE-M3 检索升级实验
+- [docs/rag_eval.md](docs/rag_eval.md) — RAG 评测方法与结果
