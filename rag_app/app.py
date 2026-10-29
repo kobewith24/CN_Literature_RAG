@@ -138,6 +138,7 @@ class RagApp(object):
         self.client = RagClient()
         self.queue = queue.Queue()
         self.hits = []
+        self.sources = []
         self.answer = ""
         self.ready = False
         self._build_ui()
@@ -187,24 +188,28 @@ class RagApp(object):
         self.btn.pack(side="right")
 
         body = ttk.Frame(root, padding=(24, 4, 24, 4))
-        body.pack(fill="both", expand=True)
+        # 注意：body 最后再 pack，否则 expand 会把底部引用条与按钮挤出窗口
         answer_card = tk.Frame(body, bg=CARD, highlightthickness=1, highlightbackground="#e5e7eb")
         answer_card.pack(fill="both", expand=True)
         self.answer_text = tk.Text(answer_card, wrap="word", relief="flat", bg=CARD, fg=TEXT,
                                    font=(FONT, 11), padx=18, pady=14, spacing1=2, spacing3=4)
-        self.answer_text.pack(fill="both", expand=True)
+        ysb = tk.Scrollbar(answer_card, orient="vertical", command=self.answer_text.yview,
+                           relief="flat", width=10)
+        self.answer_text.configure(yscrollcommand=ysb.set)
+        self.answer_text.pack(side="left", fill="both", expand=True)
+        ysb.pack(side="right", fill="y")
         self.answer_text.insert("1.0", "输入问题后按回车或点击「提问」。\n"
                                        "例如：双目立体视觉的相机标定有哪些常用方法？")
         self.answer_text.configure(state="disabled")
 
         cite = ttk.Frame(root, padding=(24, 2, 24, 2))
-        cite.pack(fill="x")
+        cite.pack(side="bottom", fill="x")
         ttk.Label(cite, text="引用来源（前 5 条）", style="Sub.TLabel").pack(anchor="w")
         self.chips = tk.Frame(cite, bg=BG)
         self.chips.pack(fill="x", pady=(4, 0))
 
         actions = ttk.Frame(root, padding=(24, 8, 24, 14))
-        actions.pack(fill="x")
+        actions.pack(side="bottom", fill="x")
         self.btn_recall = tk.Button(actions, text="查看召回结果（50）",
                                     command=self.open_results,
                                     font=(FONT, 10), bg="#e5e7eb", fg=TEXT, relief="flat",
@@ -217,6 +222,8 @@ class RagApp(object):
         self.btn_rank.pack(side="left", padx=8)
         self.footer = ttk.Label(actions, text="就绪", style="Sub.TLabel")
         self.footer.pack(side="right")
+
+        body.pack(fill="both", expand=True)
 
     # ------------------------------------------------------------ 后端检查
     def _check_backend(self):
@@ -243,6 +250,7 @@ class RagApp(object):
             return
         self.entry.delete(0, "end")
         self.hits = []
+        self.sources = []
         self.answer = ""
         self.btn.configure(state="disabled", text="生成中…")
         self.btn_recall.configure(state="disabled")
@@ -305,9 +313,10 @@ class RagApp(object):
                     self.answer += msg[1]
                     self._set_answer(self.answer)
                 elif kind == "done":
+                    self._append_sources()
                     self._pill("● 就绪", "#d1fae5", OK)
                     self.btn.configure(state="normal", text="提 问")
-                    self._footer("完成 · 答案 %d 字" % len(self.answer))
+                    self._footer("完成 · 答案 %d 字 · 引用 %d 条" % (len(self.answer), len(self.sources)))
                 elif kind == "error":
                     self._pill("● 出错", "#fee2e2", ERRC)
                     self._footer("生成失败：%s" % msg[1][:120])
@@ -332,13 +341,25 @@ class RagApp(object):
 
     def _render_chips(self, hits):
         self._clear_chips()
-        for i, h in enumerate(hits[:5], 1):
+        self.sources = hits[:5]
+        for i, h in enumerate(self.sources, 1):
             title = (h.get("title") or "").strip()
-            short = title if len(title) <= 26 else title[:26] + "…"
+            short = title if len(title) <= 20 else title[:20] + "…"
             chip = tk.Label(self.chips, text="[%d] %s" % (i, short), bg=CHIP_BG, fg=CHIP_FG,
                             font=(FONT, 9), padx=10, pady=4, cursor="hand2")
             chip.pack(side="left", padx=(0, 6))
             chip.bind("<Button-1>", lambda e, item=h: self._show_source(item))
+
+    def _append_sources(self):
+        """在答案末尾追加参考来源，便于复制与确认 [n] 对应哪篇文献。"""
+        if not self.sources:
+            return
+        lines = ["", "", "──────────── 参考来源 ────────────"]
+        for i, h in enumerate(self.sources, 1):
+            src = "摘要库" if h.get("source") == "doc" else "题录库"
+            lines.append("[%d] %s（%s）" % (i, (h.get("title") or "").strip(), src))
+        self.answer = self.answer.rstrip() + "\n" + "\n".join(lines)
+        self._set_answer(self.answer)
 
     def _show_source(self, h):
         win = tk.Toplevel(self.root)
@@ -380,8 +401,10 @@ def main():
             app.ask()
 
         def report():
-            print("SELFTEST hits=%d answer_chars=%d tokens=%s" % (
-                len(app.hits), len(app.answer), getattr(app, "token_count", -1)), flush=True)
+            print("SELFTEST hits=%d sources=%d answer_chars=%d tokens=%s has_refs=%s" % (
+                len(app.hits), len(app.sources), len(app.answer),
+                getattr(app, "token_count", -1),
+                "参考来源" in app.answer), flush=True)
             root.destroy()
 
         root.after(2000, auto)
